@@ -5,4 +5,8 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="akavache" Version="7.1.1" />
+  </ItemGroup>
+
 </Project>
