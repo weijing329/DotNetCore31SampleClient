@@ -17,9 +17,9 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     {
       TimeSpan? RemoveFunc(RemoteTask t)
       {
-        if (!t.completed)
+        if (t.completed)
         {
-          return TimeSpan.FromSeconds(3);
+          return TimeSpan.FromMilliseconds(0);
         }
 
         return null;
@@ -27,7 +27,6 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
 
       // initialize cache
       var remoteTasksCache = new SourceCache<RemoteTask, Guid>(remoteTask => remoteTask.id);
-      var _remover = remoteTasksCache.ExpireAfter(RemoveFunc, Scheduler.Default).Subscribe();
 
       // add task to cache
       RemoteTask remoteTask1 = new RemoteTask() { id = Guid.NewGuid(), name = "task1", completed = false };
@@ -35,20 +34,34 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
 
       // subscribe to task id events
       remoteTasksCache.Connect()
-                      .Filter(remoteTask => remoteTask.id == remoteTask1.id)
+                      // .Filter(remoteTask => remoteTask.id == remoteTask1.id)
+                      .OnItemAdded(remoteTask =>
+                      {
+                        Console.WriteLine($"Added remoteTask: {remoteTask.name}");
+                      })
                       .OnItemUpdated((current, previous) =>
                       {
-                        Console.WriteLine($"remoteTask: {current.id}, completed = {current.completed}");
+                        Console.WriteLine($"Updated remoteTask: {current.name}, completed = {current.completed}");
                       })
                       .OnItemRemoved(remoteTask =>
                       {
-                        Console.WriteLine($"Removing remoteTask: {remoteTask.id}");
+                        Console.WriteLine($"Removed remoteTask: {remoteTask.name}");
                       })
                       .Subscribe();
 
-      // update task by id
+      // update task
       remoteTask1.completed = true;
       remoteTasksCache.AddOrUpdate(remoteTask1);
+
+      // ExpireAfter seems only to work when all caches meet the remove function condition
+      // if one return null (no expiry), no cache will be deleted (bug?)
+      // this behavior can be reproduced by commenting out 
+      // remoteTask1.completed = true;
+      var _remover = remoteTasksCache.ExpireAfter(RemoveFunc, Scheduler.Default).Subscribe();
+
+      // task2
+      RemoteTask remoteTask2 = new RemoteTask() { id = Guid.NewGuid(), name = "task2", completed = true };
+      remoteTasksCache.AddOrUpdate(remoteTask2);
     }
   }
 }
