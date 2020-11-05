@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using DynamicData;
+using System.Reactive.Concurrency;
 
 namespace DotNetCoreGoogleCloudPubSubSimpleClient
 {
@@ -18,7 +19,19 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     }
     static async Task MainAsync()
     {
+      TimeSpan? RemoveFunc(RemoteTask t)
+      {
+        if (!t.completed)
+        {
+          return TimeSpan.FromSeconds(3);
+        }
+
+        return null;
+      }
+
+      // initialize cache
       var remoteTasksCache = new SourceCache<RemoteTask, Guid>(remoteTask => remoteTask.id);
+      var _remover = remoteTasksCache.ExpireAfter(RemoveFunc, Scheduler.Default).Subscribe();
 
       // add task to cache
       RemoteTask remoteTask1 = new RemoteTask() { id = Guid.NewGuid(), name = "task1", completed = false };
@@ -30,6 +43,10 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
                       .OnItemUpdated((current, previous) =>
                       {
                         Console.WriteLine($"remoteTask: {current.id}, completed = {current.completed}");
+                      })
+                      .OnItemRemoved(remoteTask =>
+                      {
+                        Console.WriteLine($"Removing remoteTask: {remoteTask.id}");
                       })
                       .Subscribe();
 
