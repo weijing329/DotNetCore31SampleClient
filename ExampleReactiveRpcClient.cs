@@ -11,7 +11,7 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     public bool completed;
   }
 
-  public class ExampleClient
+  public class ExampleReactiveRpcClient
   {
     public static void Run()
     {
