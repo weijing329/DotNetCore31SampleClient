@@ -38,7 +38,9 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     {
       _logger.LogInformation("2. OnStarted has been called.");
 
-      ExampleReactiveRpcClient.Run();
+      new ExampleReactiveRpcClient().RunTest1();
+      // new ExampleReactiveRpcClient().RunTest2().Wait();
+      // new ExampleReactiveRpcClient().RunTest3().Wait();
     }
 
     private void OnStopping()
