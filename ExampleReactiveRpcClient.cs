@@ -62,6 +62,14 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
       // task2
       RemoteTask remoteTask2 = new RemoteTask() { id = Guid.NewGuid(), name = "task2", completed = true };
       remoteTasksCache.AddOrUpdate(remoteTask2);
+
+      // Manual test on the same Topic
+      // TODO Add PubSub Client integration - Publish messages with ordering key
+      // TODO Add PubSub Client integration - Pull messages in order
+
+      // Manual test with Subscriber and Scheduled pulling job
+      // TODO Add PubSub Client integration - Pull messages schedule job
+      // TODO Add PubSub Client integration - Publish messages 
     }
   }
 }
