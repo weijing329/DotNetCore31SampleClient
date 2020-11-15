@@ -38,8 +38,8 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     {
       _logger.LogInformation("2. OnStarted has been called.");
 
-      new ExampleReactiveRpcClient().RunTest1();
-      // new ExampleReactiveRpcClient().RunTest2().Wait();
+      // new ExampleReactiveRpcClient().RunTest1();
+      new ExampleReactiveRpcClient().RunTest2().Wait();
       // new ExampleReactiveRpcClient().RunTest3().Wait();
     }
 
