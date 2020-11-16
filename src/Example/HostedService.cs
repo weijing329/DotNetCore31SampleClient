@@ -3,17 +3,20 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace DotNetCoreGoogleCloudPubSubSimpleClient
+namespace DotNetCore31SampleClient.Example
 {
-  public class ExampleHostedService : IHostedService
+  public class HostedService : IHostedService
   {
     private readonly ILogger _logger;
+    private IReactiveRpcClient _reactiveRpcClient;
 
-    public ExampleHostedService(
-        ILogger<ExampleHostedService> logger,
-        IHostApplicationLifetime appLifetime)
+    public HostedService(
+        ILogger<HostedService> logger,
+        IHostApplicationLifetime appLifetime,
+        IReactiveRpcClient reactiveRpcClient)
     {
       _logger = logger;
+      _reactiveRpcClient = reactiveRpcClient;
 
       appLifetime.ApplicationStarted.Register(OnStarted);
       appLifetime.ApplicationStopping.Register(OnStopping);
@@ -39,7 +42,7 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
       _logger.LogInformation("2. OnStarted has been called.");
 
       // new ExampleReactiveRpcClient().RunTest1();
-      new ExampleReactiveRpcClient().RunTest2().Wait();
+      _reactiveRpcClient.RunTest2().Wait();
       // new ExampleReactiveRpcClient().RunTest3().Wait();
     }
 

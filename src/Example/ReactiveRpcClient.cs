@@ -7,8 +7,9 @@ using System.Threading.Tasks;
 using Google.Protobuf.Collections;
 using System.Text;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
-namespace DotNetCoreGoogleCloudPubSubSimpleClient
+namespace DotNetCore31SampleClient.Example
 {
   public class RemoteTask
   {
@@ -17,11 +18,14 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     public bool completed;
   }
 
-  public class ExampleReactiveRpcClient
+  public class ReactiveRpcClient : IReactiveRpcClient
   {
-    SourceCache<RemoteTask, Guid> remoteTasksCache;
+    private readonly ILogger<ReactiveRpcClient> _logger;
+    private IGoogleCloudPubSubClient _googleCloudPubSubClient;
 
-    TimeSpan? RemoveFunc(RemoteTask t)
+    private SourceCache<RemoteTask, Guid> _remoteTasksCache;
+
+    private TimeSpan? RemoveFunc(RemoteTask t)
     {
       if (t.completed)
       {
@@ -31,13 +35,15 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
       return null;
     }
 
-    public ExampleReactiveRpcClient()
+    public ReactiveRpcClient(ILogger<ReactiveRpcClient> logger, IGoogleCloudPubSubClient googleCloudPubSubClient)
     {
+      _logger = logger;
+      _googleCloudPubSubClient = googleCloudPubSubClient;
       // initialize cache
-      this.remoteTasksCache = new SourceCache<RemoteTask, Guid>(remoteTask => remoteTask.id);
+      _remoteTasksCache = new SourceCache<RemoteTask, Guid>(remoteTask => remoteTask.id);
 
       // subscribe to task id events
-      this.remoteTasksCache.Connect()
+      _remoteTasksCache.Connect()
                             // .Filter(remoteTask => remoteTask.id == remoteTask1.id)
                             .OnItemAdded(remoteTask =>
                             {
@@ -48,7 +54,7 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
                               Console.WriteLine($"Updated remoteTask: {current.name}, completed = {current.completed}");
                               if (current.completed)
                               {
-                                this.remoteTasksCache.Remove(current);
+                                this._remoteTasksCache.Remove(current);
                               }
                             })
                             .OnItemRemoved(remoteTask =>
@@ -62,21 +68,21 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
     {
       // add task to cache
       RemoteTask remoteTask1 = new RemoteTask() { id = Guid.NewGuid(), name = "task1", completed = false };
-      this.remoteTasksCache.AddOrUpdate(remoteTask1);
+      _remoteTasksCache.AddOrUpdate(remoteTask1);
 
       // update task
       remoteTask1.completed = true;
-      this.remoteTasksCache.AddOrUpdate(remoteTask1);
+      _remoteTasksCache.AddOrUpdate(remoteTask1);
 
       // ExpireAfter seems only to work when all caches meet the remove function condition
       // if one return null (no expiry), no cache will be deleted (bug?)
       // this behavior can be reproduced by commenting out 
       // remoteTask1.completed = true;
-      var _remover = this.remoteTasksCache.ExpireAfter(RemoveFunc, Scheduler.Default).Subscribe();
+      var _remover = _remoteTasksCache.ExpireAfter(RemoveFunc, Scheduler.Default).Subscribe();
 
       // task2
       RemoteTask remoteTask2 = new RemoteTask() { id = Guid.NewGuid(), name = "task2", completed = true };
-      this.remoteTasksCache.AddOrUpdate(remoteTask2);
+      _remoteTasksCache.AddOrUpdate(remoteTask2);
     }
 
     public async Task RunTest2()
@@ -87,9 +93,9 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
 
       // add task to cache
       RemoteTask remoteTask1 = new RemoteTask() { id = Guid.NewGuid(), name = "task1", completed = false };
-      this.remoteTasksCache.AddOrUpdate(remoteTask1);
+      _remoteTasksCache.AddOrUpdate(remoteTask1);
       RemoteTask remoteTask2 = new RemoteTask() { id = Guid.NewGuid(), name = "task2", completed = false };
-      this.remoteTasksCache.AddOrUpdate(remoteTask2);
+      _remoteTasksCache.AddOrUpdate(remoteTask2);
 
       // Manual test on the same Topic
       // Add PubSub Client integration - Publish messages with ordering key
@@ -101,12 +107,12 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
         ("OrderingKey1", JsonConvert.SerializeObject(remoteTask1).ToString(), new MapField<string, string>{{"type", "Notify"}}),
         ("OrderingKey2", JsonConvert.SerializeObject(remoteTask2).ToString(), new MapField<string, string>{{"type", "Response"}}),
       };
-      this.remoteTasksCache.AddOrUpdate(remoteTask1);
-      this.remoteTasksCache.AddOrUpdate(remoteTask2);
-      await ExamplePubSubClient.PublishOrderedMessagesAsync(projectId, topicId, messagesWithOrderingKey);
+      _remoteTasksCache.AddOrUpdate(remoteTask1);
+      _remoteTasksCache.AddOrUpdate(remoteTask2);
+      await _googleCloudPubSubClient.PublishOrderedMessagesAsync(projectId, topicId, messagesWithOrderingKey);
 
       // Add PubSub Client integration - Pull messages in order
-      var numberOfMessageProcessed = await ExamplePubSubClient.PullMessagesAsync(projectId, subscriptionId, pubsubMessage =>
+      var numberOfMessageProcessed = await _googleCloudPubSubClient.PullMessagesAsync(projectId, subscriptionId, (_, pubsubMessage) =>
        {
          string decodedMessageText = Encoding.UTF8.GetString(pubsubMessage.Data.ToArray());
 
@@ -118,7 +124,7 @@ namespace DotNetCoreGoogleCloudPubSubSimpleClient
            if (pubsubMessage.Attributes["type"] == "Response")
            {
              remoteTask.completed = true;
-             this.remoteTasksCache.AddOrUpdate(remoteTask);
+             _remoteTasksCache.AddOrUpdate(remoteTask);
            }
            //  foreach (var attribute in pubsubMessage.Attributes)
            //  {
