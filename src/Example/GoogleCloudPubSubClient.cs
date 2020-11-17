@@ -50,7 +50,7 @@ namespace DotNetCore31SampleClient.Example
         }
         catch (Exception exception)
         {
-          Console.WriteLine($"An error occurred when publishing message {messageText}: {exception.Message}");
+          _logger.LogError($"An error occurred when publishing message {messageText}: {exception.Message}");
         }
       });
       await Task.WhenAll(publishTasks);
@@ -61,30 +61,40 @@ namespace DotNetCore31SampleClient.Example
     {
       SubscriptionName subscriptionName = SubscriptionName.FromProjectSubscription(projectId, subscriptionId);
       SubscriberClient subscriber = await SubscriberClient.CreateAsync(subscriptionName);
+
+
       // SubscriberClient runs your message handle function on multiple
       // threads to maximize throughput.
       int messageCount = 0;
-      Task startTask = subscriber.StartAsync((PubsubMessage message, CancellationToken cancel) =>
+      try
       {
-        messageProcess(this._logger, message);
-        // string decodedMessageText = Encoding.UTF8.GetString(message.Data.ToArray());
-        // Console.WriteLine($"Message {message.MessageId}: {decodedMessageText}");
-        // // retrieve the custom attributes from metadata
-        // if (message.Attributes != null)
-        // {
-        //   foreach (var attribute in message.Attributes)
-        //   {
-        //     Console.WriteLine($"{attribute.Key} = {attribute.Value}");
-        //   }
-        // }
-        Interlocked.Increment(ref messageCount);
-        return Task.FromResult(acknowledge ? SubscriberClient.Reply.Ack : SubscriberClient.Reply.Nack);
-      });
-      // Run for 5 seconds.
-      await Task.Delay(pullForMilliseconds);
-      await subscriber.StopAsync(CancellationToken.None);
-      // Lets make sure that the start task finished successfully after the call to stop.
-      await startTask;
+        Task startTask = subscriber.StartAsync((PubsubMessage message, CancellationToken cancel) =>
+        {
+          messageProcess(this._logger, message);
+          // string decodedMessageText = Encoding.UTF8.GetString(message.Data.ToArray());
+          // Console.WriteLine($"Message {message.MessageId}: {decodedMessageText}");
+          // // retrieve the custom attributes from metadata
+          // if (message.Attributes != null)
+          // {
+          //   foreach (var attribute in message.Attributes)
+          //   {
+          //     Console.WriteLine($"{attribute.Key} = {attribute.Value}");
+          //   }
+          // }
+          Interlocked.Increment(ref messageCount);
+          return Task.FromResult(acknowledge ? SubscriberClient.Reply.Ack : SubscriberClient.Reply.Nack);
+        });
+        // Run for 5 seconds.
+        await Task.Delay(pullForMilliseconds);
+        await subscriber.StopAsync(CancellationToken.None);
+        // Lets make sure that the start task finished successfully after the call to stop.
+        await startTask;
+      }
+      catch (Exception exception)
+      {
+        _logger.LogError($"An error occurred when pulling messages from subscription: {exception.Message}");
+        // throw;
+      }
       return messageCount;
     }
   }

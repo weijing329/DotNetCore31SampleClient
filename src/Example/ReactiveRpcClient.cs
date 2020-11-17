@@ -112,6 +112,7 @@ namespace DotNetCore31SampleClient.Example
       await _googleCloudPubSubClient.PublishOrderedMessagesAsync(projectId, topicId, messagesWithOrderingKey);
 
       // Add PubSub Client integration - Pull messages in order
+      _logger.LogInformation($"Start pulling messages from subscription");
       var numberOfMessageProcessed = await _googleCloudPubSubClient.PullMessagesAsync(projectId, subscriptionId, (_, pubsubMessage) =>
        {
          string decodedMessageText = Encoding.UTF8.GetString(pubsubMessage.Data.ToArray());
@@ -132,7 +133,7 @@ namespace DotNetCore31SampleClient.Example
            //  }
          }
        }, 10000);
-      Console.WriteLine($"Total {numberOfMessageProcessed} messages processed");
+      _logger.LogInformation($"Total {numberOfMessageProcessed} messages processed");
     }
 
     public async Task RunTest3()
