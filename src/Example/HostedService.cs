@@ -41,9 +41,9 @@ namespace DotNetCore31SampleClient.Example
     {
       _logger.LogInformation("2. OnStarted has been called.");
 
-      // new ExampleReactiveRpcClient().RunTest1();
-      _reactiveRpcClient.RunTest2().Wait();
-      // new ExampleReactiveRpcClient().RunTest3().Wait();
+      // _reactiveRpcClient.RunTest1();
+      // _reactiveRpcClient.RunTest2().Wait();
+      _reactiveRpcClient.RunTest3().Wait();
     }
 
     private void OnStopping()

@@ -25,6 +25,8 @@ namespace DotNetCore31SampleClient.Example
 
     private SourceCache<RemoteTask, Guid> _remoteTasksCache;
 
+    public SourceCache<RemoteTask, Guid> RemoteTasksCache => _remoteTasksCache;
+
     private TimeSpan? RemoveFunc(RemoteTask t)
     {
       if (t.completed)
