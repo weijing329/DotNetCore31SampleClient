@@ -39,15 +39,15 @@ namespace DotNetCore31SampleClient
                 // to have public no-arg constructor
                 // the MS DI is expected to produce transient job instances
                 // this WONT'T work with scoped services like EF Core's DbContext
-                // q.UseMicrosoftDependencyInjectionJobFactory(options =>
-                // {
-                //   // if we don't have the job in DI, allow fallback 
-                //   // to configure via default constructor
-                //   options.AllowDefaultConstructor = true;
-                // });
+                q.UseMicrosoftDependencyInjectionJobFactory(options =>
+                {
+                  // if we don't have the job in DI, allow fallback 
+                  // to configure via default constructor
+                  options.AllowDefaultConstructor = true;
+                }); // ScopedJobFactory somehow whill block google pubsub pulling messages
 
                 // or for scoped service support like EF Core DbContext
-                q.UseMicrosoftDependencyInjectionScopedJobFactory();
+                // q.UseMicrosoftDependencyInjectionScopedJobFactory();
 
                 // these are the defaults
                 q.UseSimpleTypeLoader();
@@ -58,28 +58,43 @@ namespace DotNetCore31SampleClient
                 });
 
                 // configure jobs with code
-                var jobKey = new JobKey("PullingJob", "DefaultJobGroup");
+                var pullingJobKey = new JobKey("PullingJob", "DefaultJobGroup");
                 q.AddJob<PullingJob>(j => j
                     .StoreDurably()
-                    .WithIdentity(jobKey)
+                    .WithIdentity(pullingJobKey)
                     .WithDescription("PullingJob")
                 );
 
                 q.AddTrigger(t => t
                     .WithIdentity("PullingJobTrigger")
-                    .ForJob(jobKey)
+                    .ForJob(pullingJobKey)
                     .StartNow()
-                    .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(1)).RepeatForever())
+                    .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromSeconds(5)).RepeatForever())
                     .WithDescription("PullingJobTrigger")
+                );
+
+                var publishingJobKey = new JobKey("PublishingJob", "DefaultJobGroup");
+                q.AddJob<PublishingJob>(j => j
+                    .StoreDurably()
+                    .WithIdentity(publishingJobKey)
+                    .WithDescription("PublishingJob")
+                );
+
+                q.AddTrigger(t => t
+                    .WithIdentity("PublishingJobTrigger")
+                    .ForJob(publishingJobKey)
+                    .StartNow()
+                    .WithSimpleSchedule(x => x.WithInterval(TimeSpan.FromMilliseconds(500)).RepeatForever())
+                    .WithDescription("PublishingJobTrigger")
                 );
               });
 
               // Quartz.Extensions.Hosting hosting
               services.AddQuartzHostedService(options =>
-              {
-                // when shutting down we want jobs to complete gracefully
-                options.WaitForJobsToComplete = true;
-              });
+                        {
+                          // when shutting down we want jobs to complete gracefully
+                          options.WaitForJobsToComplete = true;
+                        });
 
               services.AddHostedService<HostedService>();
             });

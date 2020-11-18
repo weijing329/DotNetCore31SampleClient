@@ -141,8 +141,13 @@ namespace DotNetCore31SampleClient.Example
     public async Task RunTest3()
     {
       // Manual test with Subscriber and Scheduled pulling job
-      // TODO Add PubSub Client integration - Pull messages schedule job
-      // TODO Add PubSub Client integration - Publish messages 
+      // Add PubSub Client integration - Pull messages schedule job
+      // DONE with Quartz PullingJob
+
+      // Add PubSub Client integration - Publish messages 
+      // publish new message every 0.5 second
+      // DONE with Quartz PublishingJob
+      await Task.Delay(TimeSpan.FromSeconds(0));
     }
   }
 }
