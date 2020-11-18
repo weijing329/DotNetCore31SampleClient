@@ -28,73 +28,93 @@ namespace DotNetCore31SampleClient.Example
         EnableMessageOrdering = true
       };
 
-      PublisherClient publisher = await PublisherClient.CreateAsync(topicName, settings: customSettings);
-
       int publishedMessageCount = 0;
-      var publishTasks = keysMessagesAndAttributes.Select(async keyMessageAndAttributes =>
+
+      try
       {
-        var (orderingKey, messageText, attributes) = keyMessageAndAttributes;
-        var pubsubMessage = new PubsubMessage
+        PublisherClient publisher = await PublisherClient.CreateAsync(topicName, settings: customSettings);
+
+        var publishTasks = keysMessagesAndAttributes.Select(async keyMessageAndAttributes =>
         {
-          OrderingKey = orderingKey,
-          Data = ByteString.CopyFromUtf8(messageText),
-          Attributes = {
+          var (orderingKey, messageText, attributes) = keyMessageAndAttributes;
+          var pubsubMessage = new PubsubMessage
+          {
+            OrderingKey = orderingKey,
+            Data = ByteString.CopyFromUtf8(messageText),
+            Attributes = {
           attributes,
+            }
+          };
+          try
+          {
+            string messageId = await publisher.PublishAsync(pubsubMessage);
+            Console.WriteLine($"Published message {messageText} with messageId {messageId}");
+            Interlocked.Increment(ref publishedMessageCount);
           }
-        };
-        try
-        {
-          string messageId = await publisher.PublishAsync(pubsubMessage);
-          Console.WriteLine($"Published message {messageText} with messageId {messageId}");
-          Interlocked.Increment(ref publishedMessageCount);
-        }
-        catch (Exception exception)
-        {
-          _logger.LogError($"An error occurred when publishing message {messageText}: {exception.Message}");
-        }
-      });
-      await Task.WhenAll(publishTasks);
+          catch (Exception exception)
+          {
+            _logger.LogError($"An error occurred when publishing message {messageText}: {exception.Message}");
+          }
+        });
+
+        await Task.WhenAll(publishTasks);
+      }
+      catch (System.Exception exception)
+      {
+        _logger.LogError($"An error occurred when creating publisher client: {exception.Message}");
+      }
+
       return publishedMessageCount;
     }
 
+
     public async Task<int> PullMessagesAsync(string projectId, string subscriptionId, Action<ILogger, PubsubMessage> messageProcess, int pullForMilliseconds = 5000, bool acknowledge = true)
     {
-      SubscriptionName subscriptionName = SubscriptionName.FromProjectSubscription(projectId, subscriptionId);
-      SubscriberClient subscriber = await SubscriberClient.CreateAsync(subscriptionName);
-
-
-      // SubscriberClient runs your message handle function on multiple
-      // threads to maximize throughput.
       int messageCount = 0;
+
       try
       {
-        Task startTask = subscriber.StartAsync((PubsubMessage message, CancellationToken cancel) =>
+        SubscriptionName subscriptionName = SubscriptionName.FromProjectSubscription(projectId, subscriptionId);
+        SubscriberClient subscriber = await SubscriberClient.CreateAsync(subscriptionName);
+
+        // SubscriberClient runs your message handle function on multiple
+        // threads to maximize throughput.
+        try
         {
-          messageProcess(this._logger, message);
-          // string decodedMessageText = Encoding.UTF8.GetString(message.Data.ToArray());
-          // Console.WriteLine($"Message {message.MessageId}: {decodedMessageText}");
-          // // retrieve the custom attributes from metadata
-          // if (message.Attributes != null)
-          // {
-          //   foreach (var attribute in message.Attributes)
-          //   {
-          //     Console.WriteLine($"{attribute.Key} = {attribute.Value}");
-          //   }
-          // }
-          Interlocked.Increment(ref messageCount);
-          return Task.FromResult(acknowledge ? SubscriberClient.Reply.Ack : SubscriberClient.Reply.Nack);
-        });
-        // Run for 5 seconds.
-        await Task.Delay(pullForMilliseconds);
-        await subscriber.StopAsync(CancellationToken.None);
-        // Lets make sure that the start task finished successfully after the call to stop.
-        await startTask;
+          Task startTask = subscriber.StartAsync((PubsubMessage message, CancellationToken cancel) =>
+          {
+            messageProcess(this._logger, message);
+            // string decodedMessageText = Encoding.UTF8.GetString(message.Data.ToArray());
+            // Console.WriteLine($"Message {message.MessageId}: {decodedMessageText}");
+            // // retrieve the custom attributes from metadata
+            // if (message.Attributes != null)
+            // {
+            //   foreach (var attribute in message.Attributes)
+            //   {
+            //     Console.WriteLine($"{attribute.Key} = {attribute.Value}");
+            //   }
+            // }
+            Interlocked.Increment(ref messageCount);
+            return Task.FromResult(acknowledge ? SubscriberClient.Reply.Ack : SubscriberClient.Reply.Nack);
+          });
+          // Run for 5 seconds.
+          await Task.Delay(pullForMilliseconds);
+          await subscriber.StopAsync(CancellationToken.None);
+          // Lets make sure that the start task finished successfully after the call to stop.
+          await startTask;
+        }
+        catch (Exception exception)
+        {
+          _logger.LogError($"An error occurred when pulling messages from subscription: {exception.Message}");
+          // throw;
+        }
+
       }
-      catch (Exception exception)
+      catch (System.Exception exception)
       {
-        _logger.LogError($"An error occurred when pulling messages from subscription: {exception.Message}");
-        // throw;
+        _logger.LogError($"An error occurred when creating subscriber client: {exception.Message}");
       }
+
       return messageCount;
     }
   }
