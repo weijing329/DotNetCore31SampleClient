@@ -1,5 +1,6 @@
 ﻿using System;
 using DotNetCore31SampleClient.Example;
+using DotNetCore31SampleClient.Example.GoogleCloud.PubSub;
 using DotNetCore31SampleClient.Example.Quartz;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -19,12 +20,12 @@ namespace DotNetCore31SampleClient
             .ConfigureServices((_, services) =>
             {
               services.AddLogging();
-              services.AddSingleton<IGoogleCloudPubSubClient>(serviceProvider =>
-                new GoogleCloudPubSubClient(serviceProvider.GetService<ILoggerFactory>().CreateLogger<GoogleCloudPubSubClient>()));
+              services.AddSingleton<IPubSubClient>(serviceProvider =>
+                new PubSubClient(serviceProvider.GetService<ILoggerFactory>().CreateLogger<PubSubClient>()));
               services.AddSingleton<IReactiveRpcClient>(serviceProvider =>
                 new ReactiveRpcClient(
                   serviceProvider.GetService<ILoggerFactory>().CreateLogger<ReactiveRpcClient>(),
-                  serviceProvider.GetRequiredService<IGoogleCloudPubSubClient>()));
+                  serviceProvider.GetRequiredService<IPubSubClient>()));
 
               // Add Quartz services
               services.AddQuartz(q =>

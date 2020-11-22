@@ -5,9 +5,9 @@ using Google.Cloud.PubSub.V1;
 using Google.Protobuf.Collections;
 using Microsoft.Extensions.Logging;
 
-namespace DotNetCore31SampleClient.Example
+namespace DotNetCore31SampleClient.Example.GoogleCloud.PubSub
 {
-  public interface IGoogleCloudPubSubClient
+  public interface IPubSubClient
   {
     Task<int> PublishOrderedMessagesAsync(string projectId, string topicId, IEnumerable<(string, string, MapField<string, string>)> keysMessagesAndAttributes);
     Task<int> PullMessagesAsync(string projectId, string subscriptionId, Action<ILogger, PubsubMessage> messageProcess, int pullForMilliseconds = 5000, bool acknowledge = true);

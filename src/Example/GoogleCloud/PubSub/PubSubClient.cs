@@ -8,13 +8,13 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DotNetCore31SampleClient.Example
+namespace DotNetCore31SampleClient.Example.GoogleCloud.PubSub
 {
-  public class GoogleCloudPubSubClient : IGoogleCloudPubSubClient
+  public class PubSubClient : IPubSubClient
   {
-    private readonly ILogger<GoogleCloudPubSubClient> _logger;
+    private readonly ILogger<PubSubClient> _logger;
 
-    public GoogleCloudPubSubClient(ILogger<GoogleCloudPubSubClient> logger)
+    public PubSubClient(ILogger<PubSubClient> logger)
     {
       _logger = logger;
     }

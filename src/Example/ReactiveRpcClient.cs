@@ -8,20 +8,15 @@ using Google.Protobuf.Collections;
 using System.Text;
 using System.Linq;
 using Microsoft.Extensions.Logging;
+using DotNetCore31SampleClient.Example.Dto;
+using DotNetCore31SampleClient.Example.GoogleCloud.PubSub;
 
 namespace DotNetCore31SampleClient.Example
 {
-  public class RemoteTask
-  {
-    public Guid id;
-    public string name;
-    public bool completed;
-  }
-
   public class ReactiveRpcClient : IReactiveRpcClient
   {
     private readonly ILogger<ReactiveRpcClient> _logger;
-    private IGoogleCloudPubSubClient _googleCloudPubSubClient;
+    private IPubSubClient _googleCloudPubSubClient;
 
     private SourceCache<RemoteTask, Guid> _remoteTasksCache;
 
@@ -37,7 +32,7 @@ namespace DotNetCore31SampleClient.Example
       return null;
     }
 
-    public ReactiveRpcClient(ILogger<ReactiveRpcClient> logger, IGoogleCloudPubSubClient googleCloudPubSubClient)
+    public ReactiveRpcClient(ILogger<ReactiveRpcClient> logger, IPubSubClient googleCloudPubSubClient)
     {
       _logger = logger;
       _googleCloudPubSubClient = googleCloudPubSubClient;

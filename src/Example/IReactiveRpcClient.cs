@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using DotNetCore31SampleClient.Example.Dto;
 using DynamicData;
 
 namespace DotNetCore31SampleClient.Example

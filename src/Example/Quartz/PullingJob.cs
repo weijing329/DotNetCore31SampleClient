@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DotNetCore31SampleClient.Example.Dto;
+using DotNetCore31SampleClient.Example.GoogleCloud.PubSub;
 using DynamicData;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -15,14 +17,14 @@ namespace DotNetCore31SampleClient.Example.Quartz
   {
     // private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<PullingJob> _logger;
-    private readonly IGoogleCloudPubSubClient _googleCloudPubSubClient;
+    private readonly IPubSubClient _googleCloudPubSubClient;
     private SourceCache<RemoteTask, Guid> _remoteTasksCache;
     // public PullingJob(IServiceProvider serviceProvider)
     // {
     //   _serviceProvider = serviceProvider;
     //   _logger = _serviceProvider.GetService<ILoggerFactory>().CreateLogger<PullingJob>();
     // }
-    public PullingJob(ILogger<PullingJob> logger, IGoogleCloudPubSubClient googleCloudPubSubClient, IReactiveRpcClient reactiveRpcClient)
+    public PullingJob(ILogger<PullingJob> logger, IPubSubClient googleCloudPubSubClient, IReactiveRpcClient reactiveRpcClient)
     {
       _logger = logger;
       _googleCloudPubSubClient = googleCloudPubSubClient;
